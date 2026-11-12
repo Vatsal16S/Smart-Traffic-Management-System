@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Traffic Management System - AI & IoT</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script>
+        window.addEventListener('error', function(e) {
+            const errDiv = document.createElement('div');
+            errDiv.style.cssText = 'position:fixed; top:0; left:0; width:100%; background:red; color:white; padding:20px; z-index:9999; font-size:16px;';
+            errDiv.innerHTML = `<strong>Javascript Error:</strong> ${e.message} at ${e.filename}:${e.lineno}`;
+            document.body.appendChild(errDiv);
+        });
+    </script>
+</head>
+<body>
+    <div id="app-container">
+        <!-- Header -->
+        <header>
+            <div class="logo">
+                <span class="pulse"></span> AI Traffic Controller
+            </div>
+            <div class="title">Virtual Smart Traffic Signal Simulation</div>
+            <div class="status-bar">
+                <div class="status-indicator">
+                    <span id="mode-display" class="badge adaptive">ADAPTIVE MODE</span>
+                </div>
+                <div class="status-indicator">
+                    <span>Priority:</span> <strong id="priority-display" class="text-green">NONE</strong>
+                </div>
+            </div>
+            <button id="btn-presentation-mode" class="btn-outline">Project Demo Mode</button>
+        </header>
+
+        <!-- Main Content Layout -->
+        <main class="main-layout">
+            
+            <!-- Left Side: Simulation Canvas -->
+            <section class="simulation-section">
+                <div class="canvas-wrapper">
+                    <canvas id="simCanvas" width="800" height="800"></canvas>
+                    
+                    <!-- Overlay alerts -->
+                    <div id="emergency-alert" class="overlay-alert hidden">
+                        🚨 EMERGENCY VEHICLE DETECTED - PRIORITY ACTIVATED
+                    </div>
+                </div>
+                
+                <!-- Vehicle Legend -->
+                <div class="vehicle-legend">
+                    <span class="legend-item"><span class="color-box" style="background-color: #3b82f6;"></span> Car</span>
+                    <span class="legend-item"><span class="color-box" style="background-color: #eab308;"></span> Motorcycle</span>
+                    <span class="legend-item"><span class="color-box" style="background-color: #f97316;"></span> Autorickshaw</span>
+                    <span class="legend-item"><span class="color-box" style="background-color: #22c55e;"></span> Bus</span>
+                    <span class="legend-item"><span class="color-box" style="background-color: #a855f7;"></span> Truck</span>
+                    <span class="legend-item"><span class="color-box" style="background-color: #ef4444;"></span> Ambulance</span>
+                </div>
+                
+                <!-- Bottom Control Panel -->
+                <div class="control-panel">
+                    <div class="control-group">
+                        <h3>Execution</h3>
+                        <button id="btn-start" class="btn btn-primary">START</button>
+                        <button id="btn-pause" class="btn btn-secondary">PAUSE</button>
+                        <button id="btn-reset" class="btn btn-danger">RESET</button>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>Traffic Density</h3>
+                        <select id="density-select" class="control-select">
+                            <option value="low">LOW</option>
+                            <option value="medium" selected>MEDIUM</option>
+                            <option value="high">HIGH</option>
+                            <option value="very_high">VERY HIGH</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group yolo-group">
+                        <h3>Detection Source</h3>
+                        <select id="source-select" class="control-select">
+                            <option value="simulation" selected>SIMULATION</option>
+                            <option value="yolo">YOLOv10 BACKEND</option>
+                        </select>
+                        <button id="btn-connect-yolo" class="btn btn-outline" style="margin-top:5px; display:none;">CONNECT YOLO</button>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>Signal Mode</h3>
+                        <select id="mode-select" class="control-select">
+                            <option value="adaptive" selected>SMART ADAPTIVE</option>
+                            <option value="fixed">FIXED TIME</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>Features</h3>
+                        <button id="btn-spawn-emergency" class="btn btn-warning">🚑 SPAWN EMERGENCY</button>
+                        <button id="btn-toggle-roi" class="btn btn-outline">TOGGLE ROI</button>
+                    </div>
+
+                    <div class="control-group">
+                        <h3>Simulation Speed</h3>
+                        <select id="speed-select" class="control-select">
+                            <option value="1">1X</option>
+                            <option value="2">2X</option>
+                            <option value="5">5X</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Side: Dashboard -->
+            <aside class="dashboard">
+                <div class="panel performance-metrics">
+                    <h2>Performance Metrics</h2>
+                    <div class="metric-row">
+                        <div class="metric-box">
+                            <span class="label">Avg Wait Time</span>
+                            <span class="value" id="metric-avg-wait">0s</span>
+                        </div>
+                        <div class="metric-box">
+                            <span class="label">Throughput</span>
+                            <span class="value" id="metric-throughput">0 veh/min</span>
+                        </div>
+                    </div>
+                    <div class="comparison-box">
+                        <h4>Fixed vs Adaptive Improvement</h4>
+                        <div class="improvement-value" id="metric-improvement">+0%</div>
+                    </div>
+                </div>
+
+                <div class="panel yolo-status-panel hidden" id="yolo-panel">
+                    <h2>YOLOv10 Status</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item"><span>Status:</span><strong id="yolo-status" class="text-secondary">NOT CONNECTED</strong></div>
+                        <div class="stat-item"><span>FPS:</span><strong id="yolo-fps">0</strong></div>
+                        <div class="stat-item"><span>Latency:</span><strong id="yolo-latency">0 ms</strong></div>
+                        <div class="stat-item"><span>Tracked:</span><strong id="yolo-tracked">0</strong></div>
+                    </div>
+                </div>
+
+                <div class="panel hidden" id="camera-panel">
+                    <h2>Live Cameras</h2>
+                    <div class="camera-grid">
+                        <div class="camera-box">
+                            <span class="camera-label">NORTH</span>
+                            <canvas id="cam-north" width="320" height="240"></canvas>
+                            <div class="cam-badges">
+                                <span class="cam-badge" id="cam-fps-north">—</span>
+                                <span class="cam-badge" id="cam-lat-north">—</span>
+                                <span class="cam-badge" id="cam-cnt-north">—</span>
+                            </div>
+                        </div>
+                        <div class="camera-box">
+                            <span class="camera-label">EAST</span>
+                            <canvas id="cam-east" width="320" height="240"></canvas>
+                            <div class="cam-badges">
+                                <span class="cam-badge" id="cam-fps-east">—</span>
+                                <span class="cam-badge" id="cam-lat-east">—</span>
+                                <span class="cam-badge" id="cam-cnt-east">—</span>
+                            </div>
+                        </div>
+                        <div class="camera-box">
+                            <span class="camera-label">SOUTH</span>
+                            <canvas id="cam-south" width="320" height="240"></canvas>
+                            <div class="cam-badges">
+                                <span class="cam-badge" id="cam-fps-south">—</span>
+                                <span class="cam-badge" id="cam-lat-south">—</span>
+                                <span class="cam-badge" id="cam-cnt-south">—</span>
+                            </div>
+                        </div>
+                        <div class="camera-box">
+                            <span class="camera-label">WEST</span>
+                            <canvas id="cam-west" width="320" height="240"></canvas>
+                            <div class="cam-badges">
+                                <span class="cam-badge" id="cam-fps-west">—</span>
+                                <span class="cam-badge" id="cam-lat-west">—</span>
+                                <span class="cam-badge" id="cam-cnt-west">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel traffic-stats">
+                    <h2>Real-time Analysis</h2>
+                    
+                    <!-- Approach Stats Template -->
+                    <div class="approach-stat" id="stat-north">
+                        <div class="approach-header">
+                            <h3>NORTH</h3>
+                            <span class="signal-indicator red"></span>
+                            <span class="timer">00</span>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-item"><span>Vehicles (ROI):</span><strong class="count">0</strong></div>
+                            <div class="stat-item"><span>Density:</span><strong class="density low">LOW</strong></div>
+                            <div class="stat-item"><span>Queue:</span><strong class="queue">0</strong></div>
+                            <div class="stat-item"><span>Wait Time:</span><strong class="wait">0s</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="approach-stat" id="stat-south">
+                        <div class="approach-header">
+                            <h3>SOUTH</h3>
+                            <span class="signal-indicator red"></span>
+                            <span class="timer">00</span>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-item"><span>Vehicles (ROI):</span><strong class="count">0</strong></div>
+                            <div class="stat-item"><span>Density:</span><strong class="density low">LOW</strong></div>
+                            <div class="stat-item"><span>Queue:</span><strong class="queue">0</strong></div>
+                            <div class="stat-item"><span>Wait Time:</span><strong class="wait">0s</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="approach-stat" id="stat-east">
+                        <div class="approach-header">
+                            <h3>EAST</h3>
+                            <span class="signal-indicator red"></span>
+                            <span class="timer">00</span>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-item"><span>Vehicles (ROI):</span><strong class="count">0</strong></div>
+                            <div class="stat-item"><span>Density:</span><strong class="density low">LOW</strong></div>
+                            <div class="stat-item"><span>Queue:</span><strong class="queue">0</strong></div>
+                            <div class="stat-item"><span>Wait Time:</span><strong class="wait">0s</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="approach-stat" id="stat-west">
+                        <div class="approach-header">
+                            <h3>WEST</h3>
+                            <span class="signal-indicator red"></span>
+                            <span class="timer">00</span>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-item"><span>Vehicles (ROI):</span><strong class="count">0</strong></div>
+                            <div class="stat-item"><span>Density:</span><strong class="density low">LOW</strong></div>
+                            <div class="stat-item"><span>Queue:</span><strong class="queue">0</strong></div>
+                            <div class="stat-item"><span>Wait Time:</span><strong class="wait">0s</strong></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="panel demo-controls">
+                    <h2>Automated Scenarios</h2>
+                    <button id="btn-run-demo" class="btn btn-primary w-100">🎬 RUN SMART TRAFFIC DEMO</button>
+                    <p class="help-text">Runs a 2-min sequence showcasing congestion buildup, adaptive resolution, and emergency priority.</p>
+                </div>
+
+                <!-- Standards & Compliance Panel -->
+                <div class="panel standards-panel">
+                    <h2>📋 Standards &amp; Compliance</h2>
+                    <p class="standards-intro">This project adheres to the following industry standards:</p>
+
+                    <div class="standards-category">
+                        <span class="std-cat-label iot">IoT / Architecture</span>
+                        <div class="std-tags">
+                            <span class="std-tag" title="IoT Architecture Framework">IEEE 2413</span>
+                            <span class="std-tag" title="IoT Reference Architecture">ISO/IEC 30141</span>
+                            <span class="std-tag" title="Information Security Management">ISO/IEC 27001</span>
+                        </div>
+                    </div>
+
+                    <div class="standards-category">
+                        <span class="std-cat-label comm">Communication</span>
+                        <div class="std-tags">
+                            <span class="std-tag" title="Wireless LAN / Ethernet (WebSocket transport)">IEEE 802</span>
+                            <span class="std-tag" title="Cellular IoT Standards">3GPP</span>
+                            <span class="std-tag" title="Telecommunications Standards">ETSI</span>
+                            <span class="std-tag" title="International Telecoms Union">ITU</span>
+                        </div>
+                    </div>
+
+                    <div class="standards-category">
+                        <span class="std-cat-label embedded">Embedded / Safety</span>
+                        <div class="std-tags">
+                            <span class="std-tag" title="Functional Safety of Electrical / Electronic Systems">IEC 61508</span>
+                            <span class="std-tag" title="Road Vehicle Functional Safety">ISO 26262</span>
+                            <span class="std-tag" title="Motor Industry Software Reliability Association Guidelines">MISRA</span>
+                        </div>
+                    </div>
+
+                    <div class="standards-category">
+                        <span class="std-cat-label power">Power / EMC</span>
+                        <div class="std-tags">
+                            <span class="std-tag" title="Electromagnetic Compatibility">IEC 61000</span>
+                            <span class="std-tag" title="Harmonic Control in Electric Power Systems">IEEE 519</span>
+                            <span class="std-tag" title="Interconnection of Distributed Energy Resources">IEEE 1547</span>
+                        </div>
+                    </div>
+
+                    <div class="standards-category">
+                        <span class="std-cat-label elec">Electrical Safety</span>
+                        <div class="std-tags">
+                            <span class="std-tag" title="Low-Voltage Electrical Installations">IEC 60364</span>
+                            <span class="std-tag" title="Safety for Electrical Equipment in Measurement &amp; Control">IEC 61010</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+        
+        <!-- Presentation Mode Overlay (Hidden by default) -->
+        <div id="presentation-overlay" class="hidden">
+            <div class="presentation-header">
+                <h2>SMART TRAFFIC MANAGEMENT SYSTEM</h2>
+                <button id="btn-exit-presentation" class="btn-danger">EXIT DEMO</button>
+            </div>
+            <div class="presentation-content">
+                <div class="presentation-flow">
+                    <div class="flow-step active" id="flow-yolo">
+                        <div class="icon">📷</div>
+                        <span>YOLO DETECTION & ROI</span>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+                    <div class="flow-step" id="flow-density">
+                        <div class="icon">📊</div>
+                        <span>TRAFFIC DENSITY</span>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+                    <div class="flow-step" id="flow-decision">
+                        <div class="icon">🧠</div>
+                        <span>SMART DECISION</span>
+                    </div>
+                    <div class="flow-arrow">➔</div>
+                    <div class="flow-step" id="flow-signal">
+                        <div class="icon">🚦</div>
+                        <span>ADAPTIVE SIGNAL</span>
+                    </div>
+                </div>
+                <!-- The canvas will be cloned or moved here dynamically in JS when entering this mode, or we just rely on CSS to change layout -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="./src/app.js"></script>
+</body>
+</html>

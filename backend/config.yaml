@@ -1,0 +1,41 @@
+yolo:
+  model_path: "yolov10n.pt"   # Nano model — fast on CPU, good enough for traffic counting
+  confidence_threshold: 0.25
+  iou_threshold: 0.45
+  # 320 gives high FPS and ultra-low latency for multi-camera vehicle counting on CPU.
+  input_resolution: 320
+  device: ""                   # Leave empty for auto (CUDA if available, else CPU)
+  tracker: "bytetrack.yaml"   # Built-in ultralytics tracker
+
+  sources:
+    north: "video1.mp4"
+    east:  "video2.mp4"
+    south: "video3.mp4"
+    west:  "video4.mp4"
+
+  # Per-direction ROI in normalised coordinates [x_min, y_min, x_max, y_max] (0.0–1.0).
+  # These are used for BOTH backend vehicle counting AND frontend overlay rendering.
+  # Vehicle counted only when its bottom-centre falls inside this box.
+  #
+  # Diagnostic results (single frame sample):
+  #   north: 12 detections, 6 in bottom-half ROI  → full frame gives all 12
+  #   east:  3 detections,  0 in bottom-half ROI  → vehicles are in TOP of frame!
+  #   south: 7 detections,  2 in bottom-half ROI  → full frame gives all 7
+  #   west:  4 detections,  2 in bottom-half ROI  → full frame gives all 4
+  # Using full-frame ROI to capture all vehicles. Narrow it per-direction once you
+  # know where your stop-line is in each camera view.
+  roi:
+    north: [0.0, 0.0, 1.0, 1.0]
+    east:  [0.0, 0.0, 1.0, 1.0]
+    south: [0.0, 0.0, 1.0, 1.0]
+    west:  [0.0, 0.0, 1.0, 1.0]
+
+  # Max seconds without a fresh frame before a direction is marked disconnected
+  stale_timeout_s: 5.0
+
+  # Max frames to buffer per direction before dropping (keeps only latest frame)
+  max_frame_buffer: 1
+
+server:
+  host: "0.0.0.0"
+  port: 8000

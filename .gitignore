@@ -1,6 +1,31 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# C / C++ / Microcontroller binaries
+*.hex
+*.bin
+*.elf
+*.o
+*.obj
+
+# Model weights & large datasets (Keep repo light)
+*.pt
+*.pth
+*.onnx
+*.engine
+*.mp4
+*.avi
+*.mkv
+
+# Virtual environments
 venv/
-.pt
+env/
+.env
+
+# IDE & OS files
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
